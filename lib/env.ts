@@ -1,0 +1,59 @@
+import "server-only";
+import { z } from "zod";
+
+/**
+ * Server-side environment validation. Imported by server code only.
+ * Supabase is REQUIRED. All third-party integrations are OPTIONAL so the
+ * public storefront builds and runs before those keys are provisioned —
+ * features degrade gracefully (see `features`).
+ */
+const schema = z.object({
+  // Required — Supabase
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+
+  // Optional — Clerk (admin auth)
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
+  CLERK_SECRET_KEY: z.string().optional(),
+
+  // Optional — Resend (email)
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().optional(),
+
+  // Optional — IMEI APIs
+  IMEIDB_API_KEY: z.string().optional(),
+  IMEI_ORG_API_KEY: z.string().optional(),
+
+  // Optional — Upstash (rate limiting)
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
+  // Optional — misc
+  SENTRY_DSN: z.string().optional(),
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+});
+
+const parsed = schema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error(
+    "❌ Invalid environment variables:",
+    JSON.stringify(parsed.error.flatten().fieldErrors, null, 2),
+  );
+  throw new Error("Invalid environment variables — see logs above.");
+}
+
+export const env = parsed.data;
+
+/** Which optional integrations are configured (drives graceful degradation). */
+export const features = {
+  clerk: Boolean(env.CLERK_SECRET_KEY && env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
+  resend: Boolean(env.RESEND_API_KEY && env.RESEND_FROM_EMAIL),
+  imeidb: Boolean(env.IMEIDB_API_KEY),
+  imeiOrg: Boolean(env.IMEI_ORG_API_KEY),
+  upstash: Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN),
+  sentry: Boolean(env.SENTRY_DSN),
+} as const;
+
+export const appUrl = env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";

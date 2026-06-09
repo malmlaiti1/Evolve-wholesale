@@ -1,0 +1,197 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-hanken);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-heading: var(--font-hanken);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Evolve brand tokens (ported from the design prototype) */
+  --color-paper: var(--paper);
+  --color-cream: var(--cream);
+  --color-cream-2: var(--cream-2);
+  --color-cream-deep: var(--cream-deep);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2-solid);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-mid: var(--accent-mid);
+  --color-accent-deep: var(--accent-deep);
+  --color-success: var(--ok);
+  --color-success-soft: var(--ok-soft);
+  --color-warning: var(--warn);
+  --color-warning-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --radius-sm: 7px;
+  --radius-md: 11px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+
+  --shadow-sm: 0 1px 2px rgba(60,50,30,.05), 0 1px 1px rgba(60,50,30,.04);
+  --shadow: 0 2px 8px rgba(60,50,30,.06), 0 1px 2px rgba(60,50,30,.05);
+  --shadow-md: 0 8px 24px rgba(60,50,30,.08), 0 2px 6px rgba(60,50,30,.05);
+  --shadow-lg: 0 20px 48px rgba(50,42,24,.12), 0 6px 14px rgba(50,42,24,.07);
+}
+
+:root {
+  --radius: 0.6875rem; /* 11px */
+
+  /* Surfaces — warm whites & creams */
+  --paper: #ffffff;
+  --cream: #faf6ee;
+  --cream-2: #f5eee1;
+  --cream-deep: #efe6d6;
+  /* Ink — warm near-blacks */
+  --ink: #211e18;
+  --ink-2-solid: #6b6557;
+  --ink-3: #9a9282;
+  /* Lines */
+  --line: #eae2d3;
+  --line-2: #e0d6c4;
+  /* Accent — forest green */
+  --accent-deep: #163a2c;
+  --accent-soft: #e7efe9;
+  --accent-mid: #c8dbce;
+  /* Semantic */
+  --ok: #2c6b4f;
+  --ok-soft: #e5f0e9;
+  --warn: #9c6a1e;
+  --warn-soft: #f6ecd8;
+  --danger: #9e3b2c;
+  --danger-soft: #f5e3de;
+
+  /* shadcn semantic vars → cream + forest theme */
+  --background: #faf6ee;
+  --foreground: #211e18;
+  --card: #ffffff;
+  --card-foreground: #211e18;
+  --popover: #ffffff;
+  --popover-foreground: #211e18;
+  --primary: #1f4d3a;
+  --primary-foreground: #f4f8f4;
+  --secondary: #f5eee1;
+  --secondary-foreground: #211e18;
+  --muted: #f5eee1;
+  --muted-foreground: #6b6557;
+  --accent: #e7efe9;
+  --accent-foreground: #1f4d3a;
+  --destructive: #9e3b2c;
+  --border: #eae2d3;
+  --input: #e0d6c4;
+  --ring: #1f4d3a;
+  --chart-1: #1f4d3a;
+  --chart-2: #2c6b4f;
+  --chart-3: #6fb58e;
+  --chart-4: #9c6a1e;
+  --chart-5: #c8dbce;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #211e18;
+  --sidebar-primary: #1f4d3a;
+  --sidebar-primary-foreground: #f4f8f4;
+  --sidebar-accent: #f5eee1;
+  --sidebar-accent-foreground: #1f4d3a;
+  --sidebar-border: #eae2d3;
+  --sidebar-ring: #1f4d3a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1, h2, h3, h4, h5 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+}
+
+/* ---- Prototype utilities ---- */
+.mono {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-feature-settings: "tnum" 1;
+}
+.tnum { font-variant-numeric: tabular-nums; }
+.eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--primary);
+}
+
+/* Image placeholder — real device photos are a v2 item (Supabase Storage). */
+.imgph {
+  position: relative; overflow: hidden;
+  background-color: var(--cream-2);
+  background-image: repeating-linear-gradient(135deg, rgba(31, 77, 58, 0.045) 0 11px, transparent 11px 22px);
+  display: flex; align-items: center; justify-content: center;
+}
+
+::selection { background: var(--accent-mid); }
+
+*::-webkit-scrollbar { width: 11px; height: 11px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--line-2); border-radius: 20px;
+  border: 3px solid transparent; background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--ink-3); background-clip: content-box; }
+
+@keyframes screenIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.screen-in { animation: screenIn 0.28s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Accessibility — always-visible keyboard focus */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
