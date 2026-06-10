@@ -26,13 +26,13 @@ export function ModelCard({ m }: { m: CatalogModel }) {
           {m.available} available
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-4">
+      <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-4">
         <span className="mono text-[11px] uppercase tracking-wide text-ink-3">{m.brand}</span>
-        <h3 className="font-bold leading-tight text-ink">{m.model}</h3>
+        <h3 className="text-sm font-bold leading-tight text-ink sm:text-base">{m.model}</h3>
         <div className="mt-auto flex items-end justify-between pt-2">
           <div>
             <span className="text-[11px] text-ink-3">from</span>
-            <div className="mono text-xl font-extrabold text-primary">{money(m.fromPrice)}</div>
+            <div className="mono text-lg font-extrabold text-primary sm:text-xl">{money(m.fromPrice)}</div>
           </div>
           <span className="text-xs font-semibold text-primary opacity-0 transition group-hover:opacity-100">
             View →

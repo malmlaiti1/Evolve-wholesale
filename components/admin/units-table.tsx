@@ -58,12 +58,75 @@ export function UnitsTable({
       <div className="mb-4 flex justify-end">
         <button
           onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-accent-deep"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3.5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-accent-deep sm:w-auto sm:py-2"
         >
           <Plus className="size-4" /> Add phone
         </button>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-line bg-paper">
+
+      {/* Mobile: stacked cards (the wide table is unusable on a phone). */}
+      <div className="space-y-3 md:hidden">
+        {units.length === 0 ? (
+          <div className="rounded-lg border border-line bg-paper p-8 text-center text-sm text-ink-3">
+            No phones in this category yet — add one.
+          </div>
+        ) : (
+          units.map((u) => (
+            <div key={u.id} className="rounded-lg border border-line bg-paper p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="mono truncate text-[13px] font-semibold text-ink">
+                    {u.imei ?? <span className="font-normal text-ink-3">— no IMEI</span>}
+                  </p>
+                  <p className="mono mt-0.5 text-[11px] text-ink-2">
+                    {[u.storage, u.color, u.carrier].filter(Boolean).join(" · ") || "—"}
+                  </p>
+                </div>
+                <StatusBadge status={u.status} />
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
+                <GradeBadge grade={u.grade} />
+                {u.battery_health != null && (
+                  <span className="mono inline-flex items-center gap-1 text-ink-2">
+                    <BatteryFull className="size-3.5" />
+                    {u.battery_health}%
+                  </span>
+                )}
+                <span className="mono ml-auto font-semibold text-ink">{money(u.price)}</span>
+                {u.cost != null && (
+                  <span className="mono text-[11px] text-ink-3">cost {money(u.cost)}</span>
+                )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => setEditing(u)}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-line py-2 text-[13px] font-medium text-ink-2 transition hover:border-primary hover:text-primary"
+                >
+                  <Pencil className="size-4" /> Edit
+                </button>
+                <button
+                  onClick={() => onArchive(u)}
+                  disabled={busy === u.id}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-line py-2 text-[13px] font-medium text-ink-2 transition hover:border-warning hover:text-warning disabled:opacity-50"
+                >
+                  <Archive className="size-4" /> Archive
+                </button>
+                <button
+                  onClick={() => onDelete(u)}
+                  disabled={busy === u.id}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-line py-2 text-[13px] font-medium text-danger transition hover:border-danger hover:bg-danger-soft disabled:opacity-50"
+                >
+                  <Trash2 className="size-4" /> Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-lg border border-line bg-paper md:block">
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-ink-3">

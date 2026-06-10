@@ -11,7 +11,41 @@ export function OrdersTable({ orders }: { orders: OrderWithItems[] }) {
 
   return (
     <>
-      <div className="overflow-x-auto rounded-lg border border-line bg-paper">
+      {/* Mobile: stacked cards, tap to open the detail drawer. */}
+      <div className="space-y-3 md:hidden">
+        {orders.length === 0 ? (
+          <div className="rounded-lg border border-line bg-paper p-8 text-center text-sm text-ink-3">
+            No orders in this view.
+          </div>
+        ) : (
+          orders.map((o) => (
+            <button
+              key={o.id}
+              onClick={() => setSelected(o)}
+              className="block w-full rounded-lg border border-line bg-paper p-4 text-left transition active:bg-cream"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="mono text-sm font-semibold text-ink">{o.order_number}</p>
+                  <p className="mt-0.5 truncate text-[13px] font-medium text-ink-2">
+                    {o.customer_name}
+                  </p>
+                  <p className="truncate text-[11px] text-ink-3">{o.customer_email}</p>
+                </div>
+                <OrderStatusBadge status={o.status} />
+              </div>
+              <div className="mt-3 flex items-center justify-between text-[13px]">
+                <span className="text-ink-2">
+                  {o.items.length} {o.items.length === 1 ? "item" : "items"}
+                </span>
+                <span className="mono font-semibold text-ink">{money(Number(o.total))}</span>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-lg border border-line bg-paper md:block">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-ink-3">

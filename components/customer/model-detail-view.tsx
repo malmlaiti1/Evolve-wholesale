@@ -31,7 +31,7 @@ export function ModelDetailView({ m }: { m: ModelDetail }) {
         />
         <div>
           <span className="mono text-xs uppercase tracking-wide text-ink-3">{m.brand}</span>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight">{m.model}</h1>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{m.model}</h1>
           <p className="mt-2 text-ink-2">
             {m.available} {m.available === 1 ? "phone" : "phones"} in stock. Pick a grade and how
             many you need — we&rsquo;ll match you with inspected units.
@@ -47,7 +47,7 @@ export function ModelDetailView({ m }: { m: ModelDetail }) {
         </div>
       </header>
 
-      <section className="mt-9">
+      <section className="mt-7 sm:mt-9">
         <h2 className="text-lg font-bold">Choose a grade</h2>
         {/* Radio semantics (not <button>) so the active row can hold the
             add-to-cart's own buttons without nesting interactive elements. */}

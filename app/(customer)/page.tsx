@@ -25,13 +25,13 @@ export default async function CatalogPage({
   const totalUnits = models.reduce((s, m) => s + m.available, 0);
 
   return (
-    <div className="screen-in mx-auto max-w-7xl px-5 py-8">
+    <div className="screen-in mx-auto max-w-7xl px-4 py-6 sm:px-5 sm:py-8">
       <header className="max-w-2xl">
         <span className="eyebrow">Live wholesale inventory</span>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight md:text-4xl">
+        <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">
           Used phones, graded and ready to move.
         </h1>
-        <p className="mt-3 leading-relaxed text-ink-2">
+        <p className="mt-3 text-sm leading-relaxed text-ink-2 sm:text-base">
           {COMPANY.tagline} Browse by model, then pick the exact unit — every phone is individually
           inspected and graded. Order for local delivery, pay cash on arrival.
         </p>
@@ -58,7 +58,7 @@ export default async function CatalogPage({
           <p className="mt-1 text-sm text-ink-2">Try a different brand or clear your search.</p>
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
           {models.map((m) => (
             <ModelCard key={m.modelId} m={m} />
           ))}

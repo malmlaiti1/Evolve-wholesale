@@ -17,7 +17,7 @@ export default async function CustomersPage({
     <>
       <AdminHeader title="Customers" subtitle={`${customers.length} with orders`} />
       <div className="p-6">
-        <form action="/admin/customers" className="mb-5 max-w-sm">
+        <form action="/admin/customers" className="mb-5 w-full max-w-sm">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
             <input
@@ -29,7 +29,35 @@ export default async function CustomersPage({
           </div>
         </form>
 
-        <div className="overflow-x-auto rounded-lg border border-line bg-paper">
+        {/* Mobile: stacked cards. */}
+        <div className="space-y-3 md:hidden">
+          {customers.length === 0 ? (
+            <div className="rounded-lg border border-line bg-paper p-10 text-center text-sm text-ink-3">
+              <Users className="mx-auto mb-2 size-7 text-ink-3" />
+              No customers yet — they appear here after their first order.
+            </div>
+          ) : (
+            customers.map((c) => (
+              <div key={c.email} className="rounded-lg border border-line bg-paper p-4">
+                <p className="font-semibold text-ink">{c.name}</p>
+                <p className="truncate text-[11px] text-ink-3">{c.email}</p>
+                <p className="mono mt-1 text-[13px] text-ink-2">{c.phone}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
+                  <span className="text-ink-2">
+                    <b className="mono text-ink">{c.orders}</b>{" "}
+                    {c.orders === 1 ? "order" : "orders"}
+                  </span>
+                  <span className="mono font-semibold text-ink">{money(c.spend)}</span>
+                  <span className="ml-auto text-[11px] text-ink-3">
+                    Last {new Date(c.lastOrder).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-lg border border-line bg-paper md:block">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-ink-3">

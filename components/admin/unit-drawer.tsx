@@ -209,7 +209,7 @@ export function UnitDrawer({
             {imeiValid && !luhnOk && <Hint tone="warn">Checksum looks off — double-check</Hint>}
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Carrier" required>
               <select value={form.carrier} onChange={(e) => set("carrier", e.target.value)} className={inputCls}>
                 <option value="" disabled>Select carrier…</option>

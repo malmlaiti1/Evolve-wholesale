@@ -31,7 +31,7 @@ export default async function ModelPage({ params }: { params: Promise<{ id: stri
   const related = await getRelatedModels(m.brand, id);
 
   return (
-    <div className="screen-in mx-auto max-w-5xl px-5 py-8">
+    <div className="screen-in mx-auto max-w-5xl px-4 py-6 sm:px-5 sm:py-8">
       <nav className="mono flex items-center gap-1.5 text-xs text-ink-3">
         <Link href="/" className="hover:text-ink-2">Catalog</Link>
         <ChevronRight className="size-3" />
@@ -45,7 +45,7 @@ export default async function ModelPage({ params }: { params: Promise<{ id: stri
       {related.length > 0 && (
         <section className="mt-14">
           <h2 className="text-xl font-bold">More {m.brand}</h2>
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {related.map((rm) => (
               <ModelCard key={rm.modelId} m={rm} />
             ))}

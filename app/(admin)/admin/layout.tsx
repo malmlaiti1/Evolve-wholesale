@@ -6,6 +6,7 @@ import { AlertTriangle, ShieldAlert, UserX } from "lucide-react";
 import { getAdminContext } from "@/lib/clerk/auth";
 import { features } from "@/lib/env";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 
 export default async function AdminLayout({
   children,
@@ -38,7 +39,7 @@ export default async function AdminLayout({
     inner = (
       <div className="flex min-h-screen bg-cream">
         <AdminSidebar account={features.password && ctx.isAdmin ? ctx.userId : null} />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col pb-20 md:pb-0">
           {!ctx.configured && (
             <div className="flex items-center gap-2 bg-warning-soft px-6 py-2 text-xs font-medium text-warning">
               <AlertTriangle className="size-3.5 shrink-0" />
@@ -49,6 +50,7 @@ export default async function AdminLayout({
           )}
           {children}
         </div>
+        <AdminMobileNav account={features.password && ctx.isAdmin ? ctx.userId : null} />
       </div>
     );
   }

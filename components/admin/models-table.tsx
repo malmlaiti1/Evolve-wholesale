@@ -42,12 +42,64 @@ export function ModelsTable({ models }: { models: AdminModel[] }) {
       <div className="mb-4 flex justify-end">
         <button
           onClick={() => setCreating(true)}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-accent-deep"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3.5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-accent-deep sm:w-auto sm:py-2"
         >
           <Plus className="size-4" /> New category
         </button>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-line bg-paper">
+
+      {/* Mobile: stacked cards. */}
+      <div className="space-y-3 md:hidden">
+        {models.length === 0 ? (
+          <div className="rounded-lg border border-line bg-paper p-8 text-center text-sm text-ink-3">
+            No categories yet — create one to start adding phones.
+          </div>
+        ) : (
+          models.map((m) => (
+            <div key={m.id} className="rounded-lg border border-line bg-paper p-4">
+              <button
+                onClick={() => router.push(`/admin/inventory/${m.id}`)}
+                className="flex w-full items-center justify-between gap-3 text-left"
+              >
+                <span className="font-semibold text-ink">
+                  {m.brand} {m.model}
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-ink-3" />
+              </button>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-2">
+                <span>{m.available} available{m.sold ? ` · ${m.sold} sold` : ""}</span>
+                <span className="mono">Grades {gradeRange(m.grades)}</span>
+                <span className="mono ml-auto font-semibold text-ink">
+                  {m.minPrice == null
+                    ? "—"
+                    : m.minPrice === m.maxPrice
+                      ? money0(m.minPrice)
+                      : `${money0(m.minPrice)}–${money0(m.maxPrice!)}`}
+                </span>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() =>
+                    setEditing({ id: m.id, brand: m.brand, model: m.model, description: m.description })
+                  }
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-line py-2 text-[13px] font-medium text-ink-2 transition hover:border-primary hover:text-primary"
+                >
+                  <Pencil className="size-4" /> Edit
+                </button>
+                <button
+                  onClick={() => onDelete(m)}
+                  disabled={busy === m.id}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-line py-2 text-[13px] font-medium text-danger transition hover:border-danger hover:bg-danger-soft disabled:opacity-50"
+                >
+                  <Trash2 className="size-4" /> Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-lg border border-line bg-paper md:block">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-ink-3">

@@ -4,24 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/shared/logo";
 import { SignOutButton } from "./sign-out-button";
-import {
-  LayoutDashboard,
-  Package,
-  ClipboardList,
-  Users,
-  ScanLine,
-  Settings,
-  ArrowLeft,
-} from "lucide-react";
-
-const NAV = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/inventory", label: "Inventory", icon: Package },
-  { href: "/admin/orders", label: "Orders", icon: ClipboardList },
-  { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/imei-checker", label: "IMEI Checker", icon: ScanLine },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
-];
+import { ADMIN_NAV, isNavActive } from "@/lib/admin-nav";
+import { ArrowLeft } from "lucide-react";
 
 export function AdminSidebar({ account }: { account?: string | null }) {
   const pathname = usePathname();
@@ -31,8 +15,9 @@ export function AdminSidebar({ account }: { account?: string | null }) {
         <Logo showTagline={false} />
       </div>
       <nav className="flex-1 space-y-1 p-3">
-        {NAV.map(({ href, label, icon: Icon, exact }) => {
-          const active = exact ? pathname === href : pathname.startsWith(href);
+        {ADMIN_NAV.map((item) => {
+          const { href, label, icon: Icon } = item;
+          const active = isNavActive(pathname, item);
           return (
             <Link
               key={href}
