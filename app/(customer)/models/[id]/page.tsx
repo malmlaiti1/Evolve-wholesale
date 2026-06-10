@@ -5,9 +5,10 @@ import { getModel, getRelatedModels } from "@/lib/devices";
 import { DeviceImage } from "@/components/shared/device-image";
 import { GradeBadge } from "@/components/shared/grade-badge";
 import { ModelCard } from "@/components/customer/model-card";
-import { AddToCartButton } from "@/components/customer/add-to-cart-button";
+import { GradeAddToCart } from "@/components/customer/grade-add-to-cart";
+import { GRADE_DESCRIPTIONS } from "@/lib/constants";
 import { money } from "@/lib/money";
-import { BatteryFull, ShieldCheck, Truck, BadgeCheck, ChevronRight } from "lucide-react";
+import { ShieldCheck, Truck, BadgeCheck, ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +20,10 @@ export async function generateMetadata({
   const { id } = await params;
   const m = await getModel(id);
   if (!m) return { title: "Not found" };
-  const from = Math.min(...m.units.map((u) => Number(u.price)));
+  const from = Math.min(...m.grades.map((g) => g.price));
   return {
     title: `${m.brand} ${m.model}`,
-    description: `${m.brand} ${m.model} — ${m.units.length} available, from ${money(from)}.`,
+    description: `${m.brand} ${m.model} — ${m.available} available, from ${money(from)}.`,
   };
 }
 
@@ -51,8 +52,8 @@ export default async function ModelPage({ params }: { params: Promise<{ id: stri
           <span className="mono text-xs uppercase tracking-wide text-ink-3">{m.brand}</span>
           <h1 className="mt-1 text-3xl font-extrabold tracking-tight">{m.model}</h1>
           <p className="mt-2 text-ink-2">
-            {m.units.length} {m.units.length === 1 ? "unit" : "units"} available — each individually
-            inspected and graded. Pick the one that fits.
+            {m.available} {m.available === 1 ? "phone" : "phones"} in stock. Pick a grade and how
+            many you need — we&rsquo;ll match you with inspected units.
           </p>
           <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
             {[
@@ -73,51 +74,35 @@ export default async function ModelPage({ params }: { params: Promise<{ id: stri
       </header>
 
       <section className="mt-9">
-        <h2 className="text-lg font-bold">Available units</h2>
+        <h2 className="text-lg font-bold">Choose a grade</h2>
         <div className="mt-4 space-y-3">
-          {m.units.map((u) => (
+          {m.grades.map((g) => (
             <div
-              key={u.id}
-              className="flex flex-col gap-3 rounded-lg border border-line bg-paper p-4 sm:flex-row sm:items-center"
+              key={g.grade}
+              className="flex flex-col gap-4 rounded-lg border border-line bg-paper p-4 sm:flex-row sm:items-center"
             >
               <div className="flex flex-1 flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-3">
-                  {u.grade && <GradeBadge grade={u.grade} />}
-                  <div className="mono flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-ink-2">
-                    {u.storage && <span>{u.storage}</span>}
-                    {u.color && <span>{u.color}</span>}
-                    {u.carrier && <span>{u.carrier}</span>}
-                    {u.battery_health != null && (
-                      <span className="inline-flex items-center gap-1">
-                        <BatteryFull className="size-3.5" />
-                        {u.battery_health}%
-                      </span>
-                    )}
-                  </div>
+                  <GradeBadge grade={g.grade} />
+                  <span className="text-[13px] font-medium text-ink-2">{g.available} available</span>
                 </div>
-                {u.condition_notes && (
-                  <p className="text-xs leading-relaxed text-ink-3">{u.condition_notes}</p>
-                )}
+                <p className="text-xs leading-relaxed text-ink-3">{GRADE_DESCRIPTIONS[g.grade]}</p>
               </div>
-              <div className="flex items-center justify-between gap-4 sm:justify-end sm:shrink-0">
+              <div className="flex items-center justify-between gap-4 sm:shrink-0 sm:flex-col sm:items-end sm:gap-2">
                 <span className="mono text-xl font-extrabold text-primary">
-                  {money(Number(u.price))}
+                  {money(g.price)}
+                  <span className="ml-1 text-xs font-medium text-ink-3">each</span>
                 </span>
-                <div className="w-40">
-                  <AddToCartButton
-                    available={u.status === "available"}
-                    device={{
-                      id: u.id ?? "",
-                      modelId: m.modelId,
-                      brand: m.brand,
-                      model: m.model,
-                      storage: u.storage,
-                      color: u.color,
-                      grade: u.grade ?? "B",
-                      price: Number(u.price),
-                    }}
-                  />
-                </div>
+                <GradeAddToCart
+                  line={{
+                    modelId: m.modelId,
+                    brand: m.brand,
+                    model: m.model,
+                    grade: g.grade,
+                    unitPrice: g.price,
+                    available: g.available,
+                  }}
+                />
               </div>
             </div>
           ))}

@@ -10,7 +10,9 @@ export const checkoutSchema = z.object({
   items: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        modelId: z.string().uuid(),
+        grade: z.enum(["A+", "A", "B+", "B", "C"]),
+        quantity: z.number().int().min(1).max(500),
         price: z.number().nonnegative(),
       }),
     )

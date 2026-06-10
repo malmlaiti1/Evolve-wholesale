@@ -1,9 +1,6 @@
 import "server-only";
 import { createServerSupabase } from "@/lib/supabase/server";
-import type { Tables, Enums } from "@/lib/supabase/types";
-
-// A single phone (view row — never includes imei/cost).
-export type CatalogUnit = Tables<"devices_public">;
+import type { Enums } from "@/lib/supabase/types";
 
 // A category with its available units aggregated for the storefront grid.
 export type CatalogModel = {
@@ -81,22 +78,61 @@ export async function getCatalogModels(
   }));
 }
 
-export async function getModel(modelId: string) {
+// One buyable offer per grade: how many are available and the price charged
+// (the highest price among the available units of that grade).
+export type GradeOffer = {
+  grade: Enums<"device_grade">;
+  available: number;
+  price: number;
+};
+
+export type ModelDetail = {
+  modelId: string;
+  brand: string;
+  model: string;
+  available: number;
+  grades: GradeOffer[];
+};
+
+// Best-first grade ordering for display.
+const GRADE_RANK: Record<Enums<"device_grade">, number> = {
+  "A+": 0,
+  A: 1,
+  "B+": 2,
+  B: 3,
+  C: 4,
+};
+
+export async function getModel(modelId: string): Promise<ModelDetail | null> {
   const supabase = createServerSupabase();
   const { data, error } = await supabase
     .from("devices_public")
-    .select("*")
+    .select("brand, model, grade, price")
     .eq("model_id", modelId)
-    .eq("status", "available")
-    .order("price", { ascending: true });
+    .eq("status", "available");
   if (error) throw error;
-  const units = (data ?? []) as CatalogUnit[];
-  if (units.length === 0) return null;
+  const rows = data ?? [];
+  if (rows.length === 0) return null;
+
+  const byGrade = new Map<Enums<"device_grade">, GradeOffer>();
+  for (const r of rows) {
+    if (!r.grade) continue;
+    const price = Number(r.price);
+    const existing = byGrade.get(r.grade);
+    if (!existing) byGrade.set(r.grade, { grade: r.grade, available: 1, price });
+    else {
+      existing.available++;
+      existing.price = Math.max(existing.price, price); // highest available = the grade price
+    }
+  }
+
+  const grades = [...byGrade.values()].sort((a, b) => GRADE_RANK[a.grade] - GRADE_RANK[b.grade]);
   return {
     modelId,
-    brand: units[0].brand ?? "",
-    model: units[0].model ?? "",
-    units,
+    brand: rows[0].brand ?? "",
+    model: rows[0].model ?? "",
+    available: rows.length,
+    grades,
   };
 }
 

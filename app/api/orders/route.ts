@@ -5,10 +5,11 @@ import { checkoutSchema } from "@/lib/validators/checkout";
 
 export const dynamic = "force-dynamic";
 
+type GradeRef = { model_id: string; grade: string };
 type RpcResult =
   | { status: "ok"; order: { order_number: string; total: number }; duplicate?: boolean }
-  | { status: "price_changed"; items: { device_id: string; current_price: number; expected_price: number }[] }
-  | { status: "unavailable"; items: { device_id: string; reason: string }[] }
+  | { status: "price_changed"; items: (GradeRef & { current_price: number; expected_price: number })[] }
+  | { status: "unavailable"; items: (GradeRef & { reason: string; available: number })[] }
   | { status: "empty" };
 
 // Customer checkout. All order writes go through here (service-role) → create_order RPC,
@@ -34,7 +35,12 @@ export async function POST(req: Request) {
   const { customer, items, idempotencyKey } = parsed.data;
   const supabase = createAdminSupabase();
   const { data, error } = await supabase.rpc("create_order", {
-    p_items: items.map((i) => ({ device_id: i.id, expected_price: i.price })),
+    p_items: items.map((i) => ({
+      model_id: i.modelId,
+      grade: i.grade,
+      quantity: i.quantity,
+      expected_price: i.price,
+    })),
     p_customer: customer,
     p_idempotency_key: idempotencyKey,
   });

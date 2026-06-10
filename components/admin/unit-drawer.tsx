@@ -12,7 +12,7 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { GRADES, GRADE_LABELS } from "@/lib/constants";
+import { GRADES, GRADE_LABELS, CARRIERS, STORAGE_OPTIONS, PHONE_COLORS } from "@/lib/constants";
 import { isValidImei } from "@/lib/imei";
 import { createUnit, updateUnit } from "@/app/(admin)/admin/inventory/actions";
 import { ImeiScanner } from "./imei-scanner";
@@ -27,7 +27,7 @@ function initial(d?: AdminDevice | null) {
     storage: d?.storage ?? "",
     color: d?.color ?? "",
     carrier: d?.carrier ?? "",
-    grade: (d?.grade ?? "B") as (typeof GRADES)[number],
+    grade: (d?.grade ?? "") as "" | (typeof GRADES)[number],
     battery_health: d?.battery_health != null ? String(d.battery_health) : "",
     price: d?.price != null ? String(d.price) : "",
     cost: d?.cost != null ? String(d.cost) : "",
@@ -66,21 +66,32 @@ export function UnitDrawer({
   const imei = form.imei.trim();
   const imeiValid = /^\d{15}$/.test(imei);
   const luhnOk = imeiValid && isValidImei(imei);
-  const batteryOk = form.battery_health !== "" && Number(form.battery_health) >= 0 && Number(form.battery_health) <= 100;
-  const canSave = imeiValid && batteryOk && form.price !== "";
+  // Battery is optional, but if provided it must be 0–100.
+  const batteryOk =
+    form.battery_health === "" ||
+    (Number(form.battery_health) >= 0 && Number(form.battery_health) <= 100);
+  const canSave =
+    imeiValid &&
+    form.storage !== "" &&
+    form.color !== "" &&
+    form.carrier !== "" &&
+    form.grade !== "" &&
+    form.price !== "" &&
+    form.cost !== "" &&
+    batteryOk;
 
   async function save() {
     setSaving(true);
     try {
       const payload = {
         imei,
-        storage: form.storage.trim() || null,
-        color: form.color.trim() || null,
-        carrier: form.carrier.trim() || null,
-        grade: form.grade,
+        storage: form.storage,
+        color: form.color,
+        carrier: form.carrier,
+        grade: form.grade as (typeof GRADES)[number],
         battery_health: form.battery_health === "" ? null : Number(form.battery_health),
         price: form.price === "" ? Number.NaN : Number(form.price),
-        cost: form.cost === "" ? null : Number(form.cost),
+        cost: form.cost === "" ? Number.NaN : Number(form.cost),
         is_local: form.is_local,
         condition_notes: form.condition_notes.trim() || null,
       };
@@ -105,7 +116,8 @@ export function UnitDrawer({
         <SheetHeader>
           <SheetTitle>{editing ? "Edit phone" : "Add phone"}</SheetTitle>
           <SheetDescription>
-            {modelLabel} · this unit&rsquo;s IMEI, battery, grade and price.
+            {modelLabel} · fields marked <span className="text-danger">*</span> are required. Battery
+            is optional.
           </SheetDescription>
         </SheetHeader>
 
@@ -133,31 +145,46 @@ export function UnitDrawer({
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Battery %" required>
-              <input type="number" min={0} max={100} value={form.battery_health} onChange={(e) => set("battery_health", e.target.value)} placeholder="90" className={inputCls} />
+            <Field label="Carrier" required>
+              <select value={form.carrier} onChange={(e) => set("carrier", e.target.value)} className={inputCls}>
+                <option value="" disabled>Select carrier…</option>
+                {CARRIERS.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </Field>
-            <Field label="Grade">
+            <Field label="Storage" required>
+              <select value={form.storage} onChange={(e) => set("storage", e.target.value)} className={inputCls}>
+                <option value="" disabled>Select storage…</option>
+                {STORAGE_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Color" required>
+              <select value={form.color} onChange={(e) => set("color", e.target.value)} className={inputCls}>
+                <option value="" disabled>Select color…</option>
+                {PHONE_COLORS.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Grade" required>
               <select value={form.grade} onChange={(e) => set("grade", e.target.value as FormState["grade"])} className={inputCls}>
+                <option value="" disabled>Select grade…</option>
                 {GRADES.map((g) => (
                   <option key={g} value={g}>{g} — {GRADE_LABELS[g]}</option>
                 ))}
               </select>
             </Field>
-            <Field label="Storage">
-              <input value={form.storage} onChange={(e) => set("storage", e.target.value)} placeholder="128GB" className={inputCls} />
-            </Field>
-            <Field label="Color">
-              <input value={form.color} onChange={(e) => set("color", e.target.value)} placeholder="Midnight" className={inputCls} />
-            </Field>
-            <Field label="Carrier">
-              <input value={form.carrier} onChange={(e) => set("carrier", e.target.value)} placeholder="Unlocked" className={inputCls} />
-            </Field>
-            <div />
             <Field label="Price ($)" required>
               <input type="number" min={0} step="0.01" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="480" className={inputCls} />
             </Field>
-            <Field label="Cost ($)">
+            <Field label="Cost ($)" required>
               <input type="number" min={0} step="0.01" value={form.cost} onChange={(e) => set("cost", e.target.value)} placeholder="360" className={inputCls} />
+            </Field>
+            <Field label="Battery %">
+              <input type="number" min={0} max={100} value={form.battery_health} onChange={(e) => set("battery_health", e.target.value)} placeholder="Optional" className={inputCls} />
             </Field>
           </div>
 

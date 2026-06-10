@@ -2,6 +2,34 @@ import type { Enums } from "@/lib/supabase/types";
 
 export const GRADES: Enums<"device_grade">[] = ["A+", "A", "B+", "B", "C"];
 
+/** Carrier options for the add/edit phone form. */
+export const CARRIERS = ["Unlocked", "Verizon", "T-Mobile", "AT&T"] as const;
+
+/** Storage options for the add/edit phone form. */
+export const STORAGE_OPTIONS = ["32GB", "64GB", "128GB", "256GB", "512GB", "1TB"] as const;
+
+/** Color options for the add/edit phone form (broad set across brands). */
+export const PHONE_COLORS = [
+  "Black",
+  "White",
+  "Gray",
+  "Graphite",
+  "Silver",
+  "Gold",
+  "Rose Gold",
+  "Blue",
+  "Pacific Blue",
+  "Sierra Blue",
+  "Green",
+  "Red",
+  "Purple",
+  "Pink",
+  "Yellow",
+  "Midnight",
+  "Starlight",
+  "Space Gray",
+] as const;
+
 export const GRADE_LABELS: Record<Enums<"device_grade">, string> = {
   "A+": "Like new",
   A: "Excellent",

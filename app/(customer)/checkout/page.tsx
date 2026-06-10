@@ -12,10 +12,12 @@ export default function CheckoutPage() {
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
   const remove = useCart((s) => s.remove);
-  const setPrice = useCart((s) => s.setPrice);
+  const setUnitPrice = useCart((s) => s.setUnitPrice);
+  const setAvailable = useCart((s) => s.setAvailable);
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [placed, setPlaced] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "" });
   const [idemKey] = useState(() =>
     typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -23,12 +25,16 @@ export default function CheckoutPage() {
       : `k_${Date.now()}_${Math.random().toString(36).slice(2)}`,
   );
 
-  useEffect(() => setMounted(true), []);
+  // Wait for the persisted cart to hydrate before deciding it's "empty".
   useEffect(() => {
-    if (mounted && items.length === 0 && !submitting) router.replace("/cart");
-  }, [mounted, items.length, submitting, router]);
+    setHydrated(useCart.persist.hasHydrated());
+    return useCart.persist.onFinishHydration(() => setHydrated(true));
+  }, []);
+  useEffect(() => {
+    if (hydrated && items.length === 0 && !submitting && !placed) router.replace("/cart");
+  }, [hydrated, items.length, submitting, placed, router]);
 
-  const subtotal = items.reduce((s, i) => s + i.price, 0);
+  const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +45,12 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer: form,
-          items: items.map((i) => ({ id: i.id, price: i.price })),
+          items: items.map((i) => ({
+            modelId: i.modelId,
+            grade: i.grade,
+            quantity: i.quantity,
+            price: i.unitPrice,
+          })),
           idempotencyKey: idemKey,
         }),
       });
@@ -49,18 +60,22 @@ export default function CheckoutPage() {
         return;
       }
       if (data.status === "price_changed") {
-        for (const it of data.items) setPrice(it.device_id, it.current_price);
+        for (const it of data.items) setUnitPrice(it.model_id, it.grade, it.current_price);
         toast.error("Some prices changed — please review your cart.");
         router.push("/cart");
         return;
       }
       if (data.status === "unavailable") {
-        for (const it of data.items) remove(it.device_id);
-        toast.error("Some phones just sold and were removed from your order.");
+        for (const it of data.items) {
+          if (it.available === 0) remove(it.model_id, it.grade);
+          else setAvailable(it.model_id, it.grade, it.available);
+        }
+        toast.error("Some phones just sold — please review your cart.");
         router.push("/cart");
         return;
       }
       if (data.status === "ok") {
+        setPlaced(true); // stop the empty-cart effect from bouncing us to /cart
         clear();
         router.push(`/order-confirmation?order=${encodeURIComponent(data.order.order_number)}`);
         return;
@@ -73,7 +88,7 @@ export default function CheckoutPage() {
     }
   }
 
-  if (!mounted) {
+  if (!hydrated) {
     return (
       <div className="py-20 text-center text-ink-3">
         <Loader2 className="mx-auto size-6 animate-spin" />
@@ -144,11 +159,14 @@ export default function CheckoutPage() {
           <h2 className="text-lg font-bold">Your order</h2>
           <ul className="mt-4 space-y-3">
             {items.map((i) => (
-              <li key={i.id} className="flex items-center justify-between gap-3 text-sm">
+              <li key={`${i.modelId}:${i.grade}`} className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-ink-2">
-                  {i.brand} {i.model} <span className="mono text-ink-3">· {i.grade}</span>
+                  {i.brand} {i.model}{" "}
+                  <span className="mono text-ink-3">
+                    · {i.grade} × {i.quantity}
+                  </span>
                 </span>
-                <span className="mono font-semibold">{money(i.price)}</span>
+                <span className="mono font-semibold">{money(i.unitPrice * i.quantity)}</span>
               </li>
             ))}
           </ul>
