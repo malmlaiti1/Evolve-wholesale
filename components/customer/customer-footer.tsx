@@ -17,6 +17,7 @@ export function CustomerFooter() {
             <Link href="/orders" className="text-ink-2 transition hover:text-primary">Track order</Link>
             <Link href="/terms" className="text-ink-2 transition hover:text-primary">Terms</Link>
             <Link href="/privacy" className="text-ink-2 transition hover:text-primary">Privacy</Link>
+            <Link href="/admin" className="text-ink-2 transition hover:text-primary">Sign in</Link>
           </nav>
           <div className="text-sm text-ink-3 sm:text-right">
             <p className="mono">{COMPANY.legal}</p>

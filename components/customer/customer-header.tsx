@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/shared/logo";
 import { SearchBar } from "./search-bar";
 import { CartButton } from "./cart-button";
-import { PackageSearch } from "lucide-react";
+import { PackageSearch, Lock } from "lucide-react";
 
 export function CustomerHeader() {
   return (
@@ -24,6 +24,14 @@ export function CustomerHeader() {
           >
             <PackageSearch className="size-4" />
             Track order
+          </Link>
+          <Link
+            href="/admin"
+            className="hidden items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-ink-2 transition hover:bg-cream-2 hover:text-ink sm:inline-flex"
+            title="Sign in"
+          >
+            <Lock className="size-4" />
+            Sign in
           </Link>
           <CartButton />
         </nav>

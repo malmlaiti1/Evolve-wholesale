@@ -13,7 +13,7 @@ export default function SignUpPage() {
         <SignUp routing="path" path="/admin/sign-up" signInUrl="/admin/sign-in" forceRedirectUrl="/admin" />
       ) : (
         <div className="max-w-sm rounded-lg border border-line bg-paper p-8 text-center">
-          <h1 className="text-lg font-bold">Staff sign-up isn&rsquo;t set up yet</h1>
+          <h1 className="text-lg font-bold">Sign-up isn&rsquo;t set up yet</h1>
           <p className="mt-2 text-sm text-ink-2">
             Configure Clerk and restrict sign-up to your staff (allowlist). The admin is currently
             open in development.

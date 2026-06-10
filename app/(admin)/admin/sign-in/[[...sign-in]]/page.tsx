@@ -16,7 +16,7 @@ export default function SignInPage() {
         <AdminLoginForm />
       ) : (
         <div className="max-w-sm rounded-lg border border-line bg-paper p-8 text-center">
-          <h1 className="text-lg font-bold">Staff sign-in isn&rsquo;t set up yet</h1>
+          <h1 className="text-lg font-bold">Sign-in isn&rsquo;t set up yet</h1>
           <p className="mt-2 text-sm text-ink-2">
             Add Clerk keys or set <code className="mono">ADMIN_EMAIL</code> /{" "}
             <code className="mono">ADMIN_PASSWORD_HASH</code> in{" "}

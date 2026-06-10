@@ -32,9 +32,9 @@ export function AdminLoginForm() {
       <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent-soft text-primary">
         <Lock className="size-6" />
       </div>
-      <h1 className="mt-4 text-center text-xl font-bold">Staff sign-in</h1>
+      <h1 className="mt-4 text-center text-xl font-bold">Sign in</h1>
       <p className="mt-1 text-center text-sm text-ink-2">
-        Evolve Wholesale admin — authorized staff only.
+        Evolve Wholesale admin — authorized accounts only.
       </p>
 
       <div className="mt-6 space-y-4">
