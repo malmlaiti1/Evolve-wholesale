@@ -10,6 +10,7 @@ export type CatalogModel = {
   available: number;
   fromPrice: number;
   grades: Enums<"device_grade">[];
+  imageUrl: string | null;
 };
 
 export type SortKey = "newest" | "price-asc" | "price-desc";
@@ -24,7 +25,7 @@ export async function getCatalogModels(
   const supabase = createServerSupabase();
   let q = supabase
     .from("devices_public")
-    .select("model_id, brand, model, price, grade, created_at")
+    .select("model_id, brand, model, price, grade, created_at, image_url")
     .eq("status", "available");
   if (filters.brands?.length) q = q.in("brand", filters.brands);
   if (filters.search) {
@@ -34,10 +35,15 @@ export async function getCatalogModels(
   const { data, error } = await q;
   if (error) throw error;
 
-  type Acc = CatalogModel & { newest: string };
+  // `topPrice`/`topCreatedAt` track the highest-priced available unit (earliest
+  // created on a tie) — its photo is the one shown on the catalog card, matching
+  // the unit create_order sells first.
+  type Acc = CatalogModel & { newest: string; topPrice: number; topCreatedAt: string };
   const map = new Map<string, Acc>();
   for (const u of data ?? []) {
     if (!u.model_id) continue;
+    const price = Number(u.price);
+    const createdAt = u.created_at ?? "";
     let m = map.get(u.model_id);
     if (!m) {
       m = {
@@ -45,16 +51,24 @@ export async function getCatalogModels(
         brand: u.brand ?? "",
         model: u.model ?? "",
         available: 0,
-        fromPrice: Number(u.price),
+        fromPrice: price,
         grades: [],
-        newest: u.created_at ?? "",
+        imageUrl: u.image_url ?? null,
+        newest: createdAt,
+        topPrice: price,
+        topCreatedAt: createdAt,
       };
       map.set(u.model_id, m);
     }
     m.available++;
-    m.fromPrice = Math.min(m.fromPrice, Number(u.price));
+    m.fromPrice = Math.min(m.fromPrice, price);
+    if (price > m.topPrice || (price === m.topPrice && createdAt < m.topCreatedAt)) {
+      m.topPrice = price;
+      m.topCreatedAt = createdAt;
+      m.imageUrl = u.image_url ?? null;
+    }
     if (u.grade && !m.grades.includes(u.grade)) m.grades.push(u.grade);
-    if ((u.created_at ?? "") > m.newest) m.newest = u.created_at ?? "";
+    if (createdAt > m.newest) m.newest = createdAt;
   }
 
   const models = [...map.values()];
@@ -75,6 +89,7 @@ export async function getCatalogModels(
     available: m.available,
     fromPrice: m.fromPrice,
     grades: m.grades,
+    imageUrl: m.imageUrl,
   }));
 }
 
@@ -84,6 +99,7 @@ export type GradeOffer = {
   grade: Enums<"device_grade">;
   available: number;
   price: number;
+  imageUrl: string | null;
 };
 
 export type ModelDetail = {
@@ -107,26 +123,44 @@ export async function getModel(modelId: string): Promise<ModelDetail | null> {
   const supabase = createServerSupabase();
   const { data, error } = await supabase
     .from("devices_public")
-    .select("brand, model, grade, price")
+    .select("brand, model, grade, price, created_at, image_url")
     .eq("model_id", modelId)
     .eq("status", "available");
   if (error) throw error;
   const rows = data ?? [];
   if (rows.length === 0) return null;
 
-  const byGrade = new Map<Enums<"device_grade">, GradeOffer>();
+  // Per grade, the price + photo come from the highest-priced available unit
+  // (earliest created on a tie) — the same unit create_order locks/sells first.
+  type Agg = GradeOffer & { topCreatedAt: string };
+  const byGrade = new Map<Enums<"device_grade">, Agg>();
   for (const r of rows) {
     if (!r.grade) continue;
     const price = Number(r.price);
+    const createdAt = r.created_at ?? "";
+    const image = r.image_url ?? null;
     const existing = byGrade.get(r.grade);
-    if (!existing) byGrade.set(r.grade, { grade: r.grade, available: 1, price });
-    else {
+    if (!existing) {
+      byGrade.set(r.grade, {
+        grade: r.grade,
+        available: 1,
+        price,
+        imageUrl: image,
+        topCreatedAt: createdAt,
+      });
+    } else {
       existing.available++;
-      existing.price = Math.max(existing.price, price); // highest available = the grade price
+      if (price > existing.price || (price === existing.price && createdAt < existing.topCreatedAt)) {
+        existing.price = price; // highest available = the grade price
+        existing.imageUrl = image;
+        existing.topCreatedAt = createdAt;
+      }
     }
   }
 
-  const grades = [...byGrade.values()].sort((a, b) => GRADE_RANK[a.grade] - GRADE_RANK[b.grade]);
+  const grades: GradeOffer[] = [...byGrade.values()]
+    .sort((a, b) => GRADE_RANK[a.grade] - GRADE_RANK[b.grade])
+    .map((g) => ({ grade: g.grade, available: g.available, price: g.price, imageUrl: g.imageUrl }));
   return {
     modelId,
     brand: rows[0].brand ?? "",

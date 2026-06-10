@@ -44,6 +44,7 @@ describe("unitSchema (phone)", () => {
     cost: 360,
     is_local: true,
     battery_health: 90,
+    image_url: "https://example.supabase.co/storage/v1/object/public/product-images/devices/x.jpg",
   };
   it("accepts a valid phone", () => {
     expect(unitSchema.safeParse(ok).success).toBe(true);
@@ -84,5 +85,10 @@ describe("unitSchema (phone)", () => {
   });
   it("rejects a negative price", () => {
     expect(unitSchema.safeParse({ ...ok, price: -5 }).success).toBe(false);
+  });
+  it("rejects a missing image", () => {
+    const { image_url, ...noImage } = ok;
+    void image_url;
+    expect(unitSchema.safeParse(noImage).success).toBe(false);
   });
 });

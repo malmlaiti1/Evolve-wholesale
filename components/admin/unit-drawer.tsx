@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ScanLine, Loader2 } from "lucide-react";
+import { ScanLine, Loader2, ImagePlus, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { GRADES, GRADE_LABELS, CARRIERS, STORAGE_OPTIONS, PHONE_COLORS } from "@/lib/constants";
 import { isValidImei } from "@/lib/imei";
-import { createUnit, updateUnit } from "@/app/(admin)/admin/inventory/actions";
+import { createUnit, updateUnit, uploadProductImage } from "@/app/(admin)/admin/inventory/actions";
 import { ImeiScanner } from "./imei-scanner";
 import type { AdminDevice } from "@/lib/admin/queries";
 
@@ -33,6 +33,7 @@ function initial(d?: AdminDevice | null) {
     cost: d?.cost != null ? String(d.cost) : "",
     is_local: d?.is_local ?? true,
     condition_notes: d?.condition_notes ?? "",
+    image_url: d?.image_url ?? "",
   };
 }
 type FormState = ReturnType<typeof initial>;
@@ -54,6 +55,7 @@ export function UnitDrawer({
   const editing = !!unit;
   const [saving, setSaving] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState<FormState>(() => initial(unit));
 
   useEffect(() => {
@@ -78,7 +80,25 @@ export function UnitDrawer({
     form.grade !== "" &&
     form.price !== "" &&
     form.cost !== "" &&
+    form.image_url !== "" &&
+    !uploading &&
     batteryOk;
+
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await uploadProductImage(fd);
+      if (res.ok) set("image_url", res.url);
+      else toast.error(res.error);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function save() {
     setSaving(true);
@@ -94,6 +114,7 @@ export function UnitDrawer({
         cost: form.cost === "" ? Number.NaN : Number(form.cost),
         is_local: form.is_local,
         condition_notes: form.condition_notes.trim() || null,
+        image_url: form.image_url,
       };
       const res = editing
         ? await updateUnit(unit!.id, payload)
@@ -122,6 +143,50 @@ export function UnitDrawer({
         </SheetHeader>
 
         <div className="space-y-4 px-4">
+          <Field label="Product image" required>
+            {form.image_url ? (
+              <div className="relative w-32">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={form.image_url}
+                  alt="Product preview"
+                  className="aspect-square w-32 rounded-md border border-line-2 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => set("image_url", "")}
+                  title="Remove image"
+                  className="absolute -right-2 -top-2 inline-flex size-6 items-center justify-center rounded-full border border-line-2 bg-paper text-ink-2 shadow-sm transition hover:text-danger"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ) : (
+              <label
+                className={`flex aspect-square w-32 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-line-2 text-center text-ink-3 transition hover:border-primary hover:text-primary ${
+                  uploading ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
+                {uploading ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <ImagePlus className="size-5" />
+                )}
+                <span className="px-2 text-[11px] leading-tight">
+                  {uploading ? "Uploading…" : "Upload photo"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={onPickImage}
+                  className="sr-only"
+                  disabled={uploading}
+                />
+              </label>
+            )}
+            <Hint tone="warn">Square crop · PNG, JPG, or WebP · up to 5&nbsp;MB.</Hint>
+          </Field>
+
           <Field label="IMEI" required>
             <div className="flex gap-2">
               <input

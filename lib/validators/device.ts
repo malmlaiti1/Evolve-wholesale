@@ -9,7 +9,7 @@ export const modelSchema = z.object({
 export type ModelInput = z.infer<typeof modelSchema>;
 
 // A single phone under a category.
-// Required: imei, storage, color, carrier, grade, price, cost.
+// Required: imei, storage, color, carrier, grade, price, cost, image_url.
 // Optional: battery_health, condition_notes.
 export const unitSchema = z.object({
   imei: z.string().trim().regex(/^\d{15}$/, "IMEI must be exactly 15 digits").nullish(),
@@ -22,5 +22,6 @@ export const unitSchema = z.object({
   cost: z.number().nonnegative("Cost can't be negative").max(100000),
   is_local: z.boolean(),
   condition_notes: z.string().trim().max(500).nullish(),
+  image_url: z.string().trim().url("Add a product image"),
 });
 export type UnitInput = z.infer<typeof unitSchema>;

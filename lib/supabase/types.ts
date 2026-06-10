@@ -53,6 +53,7 @@ export type Database = {
           created_at: string
           grade: Database["public"]["Enums"]["device_grade"]
           id: string
+          image_url: string | null
           imei: string | null
           imei_checked_at: string | null
           is_local: boolean
@@ -74,6 +75,7 @@ export type Database = {
           created_at?: string
           grade: Database["public"]["Enums"]["device_grade"]
           id?: string
+          image_url?: string | null
           imei?: string | null
           imei_checked_at?: string | null
           is_local?: boolean
@@ -95,6 +97,7 @@ export type Database = {
           created_at?: string
           grade?: Database["public"]["Enums"]["device_grade"]
           id?: string
+          image_url?: string | null
           imei?: string | null
           imei_checked_at?: string | null
           is_local?: boolean
@@ -260,6 +263,7 @@ export type Database = {
           created_at: string | null
           grade: Database["public"]["Enums"]["device_grade"] | null
           id: string | null
+          image_url: string | null
           is_local: boolean | null
           model: string | null
           model_id: string | null

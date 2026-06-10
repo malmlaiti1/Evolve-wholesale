@@ -78,6 +78,39 @@ export async function deleteModel(id: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+// ---------- Product images ----------
+const IMAGE_TYPES: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+};
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+// Uploads a product photo to the public `product-images` bucket and returns its
+// public URL. Called from the admin unit drawer when a file is selected.
+export async function uploadProductImage(
+  formData: FormData,
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  await assertAdmin();
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "No image was provided." };
+  }
+  const ext = IMAGE_TYPES[file.type];
+  if (!ext) return { ok: false, error: "Use a PNG, JPG, or WebP image." };
+  if (file.size > MAX_IMAGE_BYTES) return { ok: false, error: "Image must be 5 MB or smaller." };
+
+  const supabase = createAdminSupabase();
+  const path = `devices/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage
+    .from("product-images")
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (error) return { ok: false, error: "Could not upload the image." };
+
+  const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+  return { ok: true, url: data.publicUrl };
+}
+
 // ---------- Units (devices) ----------
 function unitRow(d: ReturnType<typeof unitSchema.parse>) {
   return {
@@ -91,6 +124,7 @@ function unitRow(d: ReturnType<typeof unitSchema.parse>) {
     cost: d.cost ?? null,
     is_local: d.is_local,
     condition_notes: d.condition_notes || null,
+    image_url: d.image_url,
   };
 }
 

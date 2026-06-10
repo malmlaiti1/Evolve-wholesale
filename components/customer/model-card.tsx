@@ -16,7 +16,7 @@ export function ModelCard({ m }: { m: CatalogModel }) {
       className="group flex flex-col overflow-hidden rounded-lg border border-line bg-paper shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <div className="relative">
-        <DeviceImage label={`${m.brand} ${m.model}`} className="aspect-square" />
+        <DeviceImage src={m.imageUrl} label={`${m.brand} ${m.model}`} className="aspect-square" />
         {gradeLabel && (
           <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1 text-[11.5px] font-semibold text-primary">
             <span className="mono font-bold">{gradeLabel}</span>
