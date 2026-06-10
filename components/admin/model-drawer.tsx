@@ -13,6 +13,8 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { createModel, updateModel } from "@/app/(admin)/admin/inventory/actions";
+import { Combobox } from "@/components/ui/combobox";
+import { PHONE_BRANDS, modelsForBrand } from "@/lib/phone-catalog";
 
 const inputCls =
   "h-10 w-full rounded-md border border-line-2 bg-paper px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-accent-soft";
@@ -84,24 +86,29 @@ export function ModelDrawer({
         </SheetHeader>
 
         <div className="space-y-4 px-4">
-          <label className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <span className="text-xs font-medium text-ink-2">Brand</span>
-            <input
+            <Combobox
               value={form.brand}
-              onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))}
-              placeholder="Apple"
-              className={inputCls}
+              onChange={(v) => setForm((f) => ({ ...f, brand: v }))}
+              options={[...PHONE_BRANDS]}
+              placeholder="Search or type a brand…"
             />
-          </label>
-          <label className="flex flex-col gap-1">
+          </div>
+          <div className="flex flex-col gap-1">
             <span className="text-xs font-medium text-ink-2">Model</span>
-            <input
+            <Combobox
               value={form.model}
-              onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-              placeholder="iPhone 13"
-              className={inputCls}
+              onChange={(v) => setForm((f) => ({ ...f, model: v }))}
+              options={modelsForBrand(form.brand)}
+              placeholder={form.brand ? "Search or type a model…" : "Pick a brand first"}
+              emptyHint={
+                form.brand
+                  ? "No matches — press Enter to use what you typed."
+                  : "Choose a brand to see its models."
+              }
             />
-          </label>
+          </div>
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-ink-2">Description (optional)</span>
             <textarea
