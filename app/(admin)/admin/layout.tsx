@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AlertTriangle, ShieldAlert, UserX } from "lucide-react";
 import { getAdminContext } from "@/lib/clerk/auth";
+import { features } from "@/lib/env";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
 export default async function AdminLayout({
@@ -24,7 +25,7 @@ export default async function AdminLayout({
     // Admins, the dev-bypass, and the (unauthenticated) sign-in/up overlays render here.
     inner = (
       <div className="flex min-h-screen bg-cream">
-        <AdminSidebar />
+        <AdminSidebar account={features.password && ctx.isAdmin ? ctx.userId : null} />
         <div className="flex min-w-0 flex-1 flex-col">
           {!ctx.configured && (
             <div className="flex items-center gap-2 bg-warning-soft px-6 py-2 text-xs font-medium text-warning">
@@ -40,7 +41,8 @@ export default async function AdminLayout({
     );
   }
 
-  return ctx.configured ? <ClerkProvider>{inner}</ClerkProvider> : inner;
+  // Only Clerk needs its provider; password mode is "configured" without Clerk keys.
+  return features.clerk ? <ClerkProvider>{inner}</ClerkProvider> : inner;
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

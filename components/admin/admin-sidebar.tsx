@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/shared/logo";
+import { SignOutButton } from "./sign-out-button";
 import {
   LayoutDashboard,
   Package,
@@ -22,7 +23,7 @@ const NAV = [
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ account }: { account?: string | null }) {
   const pathname = usePathname();
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-paper md:flex">
@@ -48,7 +49,7 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-      <div className="border-t border-line p-3">
+      <div className="space-y-1 border-t border-line p-3">
         <Link
           href="/"
           className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-ink-2 transition hover:bg-cream-2 hover:text-ink"
@@ -56,6 +57,14 @@ export function AdminSidebar() {
           <ArrowLeft className="size-4" />
           View store
         </Link>
+        {account && (
+          <>
+            <SignOutButton />
+            <p className="truncate px-3 pt-1 text-[11px] text-ink-3" title={account}>
+              {account}
+            </p>
+          </>
+        )}
       </div>
     </aside>
   );

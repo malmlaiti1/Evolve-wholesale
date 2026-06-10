@@ -17,6 +17,12 @@ const schema = z.object({
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
   CLERK_SECRET_KEY: z.string().optional(),
 
+  // Optional — built-in password login (used when Clerk isn't configured).
+  // ADMIN_PASSWORD_HASH is a scrypt hash ("saltHex:derivedHex"), never plaintext.
+  ADMIN_EMAIL: z.string().email().optional(),
+  ADMIN_PASSWORD_HASH: z.string().optional(),
+  ADMIN_SESSION_SECRET: z.string().min(16).optional(),
+
   // Optional — Resend (email)
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
@@ -49,6 +55,7 @@ export const env = parsed.data;
 /** Which optional integrations are configured (drives graceful degradation). */
 export const features = {
   clerk: Boolean(env.CLERK_SECRET_KEY && env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
+  password: Boolean(env.ADMIN_EMAIL && env.ADMIN_PASSWORD_HASH && env.ADMIN_SESSION_SECRET),
   resend: Boolean(env.RESEND_API_KEY && env.RESEND_FROM_EMAIL),
   imeidb: Boolean(env.IMEIDB_API_KEY),
   imeiOrg: Boolean(env.IMEI_ORG_API_KEY),

@@ -9,13 +9,21 @@ export type AdminContext = {
 };
 
 /**
- * Resolves admin access. When Clerk is configured, requires a signed-in user
- * whose `publicMetadata.role === "admin"`. When Clerk is NOT configured, the
- * admin is open in development (devBypass) and blocked in production — so the
- * site builds and previews before Clerk is set up, without shipping an open admin.
+ * Resolves admin access. Precedence:
+ *   1. Clerk (when configured): signed-in user with `publicMetadata.role === "admin"`.
+ *   2. Built-in password login (when configured): a valid signed session cookie.
+ *   3. Neither: open in development (devBypass), blocked in production — so the
+ *      site builds and previews before any auth is set up, without an open admin.
  */
 export async function getAdminContext(): Promise<AdminContext> {
   if (!features.clerk) {
+    if (features.password) {
+      const { cookies } = await import("next/headers");
+      const { verifySessionToken, ADMIN_COOKIE } = await import("@/lib/admin-auth");
+      const token = (await cookies()).get(ADMIN_COOKIE)?.value;
+      const email = verifySessionToken(token);
+      return { configured: true, isAdmin: Boolean(email), userId: email, devBypass: false };
+    }
     const dev = process.env.NODE_ENV !== "production";
     return { configured: false, isAdmin: dev, userId: null, devBypass: dev };
   }
