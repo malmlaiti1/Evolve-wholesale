@@ -22,25 +22,41 @@ function b64url(buf: Buffer) {
   return buf.toString("base64url");
 }
 
-/** Verify an email + password against the configured admin credentials. */
+// Constant-time-ish dummy so an email mismatch (or unconfigured creds) still
+// spends scrypt work — otherwise response timing would reveal the valid email.
+const DUMMY_SALT = Buffer.alloc(16);
+const DUMMY_LEN = 64;
+
+/**
+ * Verify an email + password against the configured admin credentials.
+ * Always runs scrypt exactly once (no early return on email mismatch) so the
+ * response time doesn't leak whether the email was correct.
+ */
 export function verifyCredentials(email: string, password: string): boolean {
   const expectedEmail = process.env.ADMIN_EMAIL;
   const stored = process.env.ADMIN_PASSWORD_HASH;
-  if (!expectedEmail || !stored) return false;
 
-  if (email.trim().toLowerCase() !== expectedEmail.trim().toLowerCase()) return false;
+  const emailMatches =
+    !!expectedEmail && email.trim().toLowerCase() === expectedEmail.trim().toLowerCase();
 
-  const [saltHex, hashHex] = stored.split(":");
-  if (!saltHex || !hashHex) return false;
-  const salt = Buffer.from(saltHex, "hex");
-  const expected = Buffer.from(hashHex, "hex");
+  // Choose the real salt/hash when available & parseable, else a dummy — but
+  // ALWAYS run scrypt so timing is independent of email/config.
+  const [saltHex, hashHex] = (stored ?? "").split(":");
+  const hasHash = Boolean(stored && saltHex && hashHex);
+  const salt = hasHash ? Buffer.from(saltHex, "hex") : DUMMY_SALT;
+  const expected = hasHash ? Buffer.from(hashHex, "hex") : Buffer.alloc(DUMMY_LEN);
+
   let derived: Buffer;
   try {
-    derived = scryptSync(password, salt, expected.length);
+    derived = scryptSync(password, salt, expected.length || DUMMY_LEN);
   } catch {
     return false;
   }
-  return derived.length === expected.length && timingSafeEqual(derived, expected);
+
+  const passwordMatches =
+    hasHash && derived.length === expected.length && timingSafeEqual(derived, expected);
+
+  return emailMatches && passwordMatches;
 }
 
 /** Build a signed session token: `<payloadB64>.<sigB64>`. */

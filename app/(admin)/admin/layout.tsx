@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AlertTriangle, ShieldAlert, UserX } from "lucide-react";
 import { getAdminContext } from "@/lib/clerk/auth";
@@ -11,6 +13,16 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const ctx = await getAdminContext();
+
+  // Defense-in-depth: don't rely on middleware alone. When auth is configured
+  // but the caller isn't an admin, redirect to sign-in here too — except on the
+  // sign-in/up routes themselves (which must render to let them authenticate).
+  const pathname = (await headers()).get("x-pathname") ?? "";
+  const onAuthRoute =
+    pathname.startsWith("/admin/sign-in") || pathname.startsWith("/admin/sign-up");
+  if (ctx.configured && !ctx.isAdmin && !ctx.userId && !onAuthRoute) {
+    redirect("/admin/sign-in");
+  }
 
   // Production with no Clerk → block with a setup notice instead of an open admin.
   if (!ctx.configured && process.env.NODE_ENV === "production") {
@@ -59,9 +71,10 @@ function SetupCard() {
       </div>
       <h1 className="mt-5 text-xl font-bold">Admin login not configured</h1>
       <p className="mt-2 text-sm text-ink-2">
-        Set <code className="mono">NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code> and{" "}
-        <code className="mono">CLERK_SECRET_KEY</code>, then restrict access to staff (Clerk
-        allowlist + <code className="mono">role: admin</code>).
+        This environment has no admin auth set. Add the password-login vars{" "}
+        <code className="mono">ADMIN_EMAIL</code>, <code className="mono">ADMIN_PASSWORD_HASH</code>{" "}
+        and <code className="mono">ADMIN_SESSION_SECRET</code> (or Clerk keys) to your hosting
+        environment, then redeploy.
       </p>
       <Link
         href="/"

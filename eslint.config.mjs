@@ -15,7 +15,17 @@ const eslintConfig = [
     // Service-role / server-only fence: client components must never import
     // server-only modules (the service-role Supabase client, env, etc.).
     // Type-only imports are allowed (erased at build).
-    files: ["components/**/*.{ts,tsx}", "hooks/**/*.{ts,tsx}"],
+    // New client UI should live in components/ (covered by the glob) or, if it
+    // must live under app/, be added to the explicit list below.
+    files: [
+      "components/**/*.{ts,tsx}",
+      "hooks/**/*.{ts,tsx}",
+      "app/(customer)/cart/page.tsx",
+      "app/(customer)/checkout/page.tsx",
+      "app/(customer)/orders/page.tsx",
+      "app/(customer)/error.tsx",
+      "app/(admin)/admin/error.tsx",
+    ],
     rules: {
       "@typescript-eslint/no-restricted-imports": [
         "error",

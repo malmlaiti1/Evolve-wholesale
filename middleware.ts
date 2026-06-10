@@ -20,6 +20,14 @@ const isPublicAdminRoute = createRouteMatcher([
   "/admin/sign-up(.*)",
 ]);
 
+// Forward the current path to Server Components so the admin layout can apply a
+// second, independent authz check (defense-in-depth alongside this middleware).
+function withPathname(req: NextRequest) {
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-pathname", req.nextUrl.pathname);
+  return NextResponse.next({ request: { headers: requestHeaders } });
+}
+
 async function passwordMiddleware(req: NextRequest) {
   if (isAdminRoute(req) && !isPublicAdminRoute(req)) {
     const token = req.cookies.get(ADMIN_COOKIE)?.value;
@@ -31,7 +39,7 @@ async function passwordMiddleware(req: NextRequest) {
       return NextResponse.redirect(url);
     }
   }
-  return NextResponse.next();
+  return withPathname(req);
 }
 
 const handler = clerkConfigured
@@ -39,10 +47,11 @@ const handler = clerkConfigured
       if (isAdminRoute(req) && !isPublicAdminRoute(req)) {
         await auth.protect();
       }
+      return withPathname(req);
     })
   : passwordConfigured
     ? passwordMiddleware
-    : () => NextResponse.next();
+    : (req: NextRequest) => withPathname(req);
 
 export default handler;
 

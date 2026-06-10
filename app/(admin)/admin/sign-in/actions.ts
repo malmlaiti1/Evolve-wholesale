@@ -1,8 +1,9 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { features } from "@/lib/env";
+import { rateLimit, ipFromHeaders } from "@/lib/rate-limit";
 import {
   verifyCredentials,
   createSessionToken,
@@ -19,6 +20,13 @@ export async function signInAction(
   if (!features.password) {
     return { error: "Password login isn't configured." };
   }
+
+  // Throttle by IP to stop online password brute-force.
+  const { ok } = await rateLimit("login", ipFromHeaders(await headers()));
+  if (!ok) {
+    return { error: "Too many attempts. Please wait a few minutes and try again." };
+  }
+
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   if (!email || !password) {
