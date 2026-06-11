@@ -27,9 +27,9 @@ const schema = z.object({
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
 
-  // Optional — IMEI APIs
-  IMEIDB_API_KEY: z.string().optional(),
-  IMEI_ORG_API_KEY: z.string().optional(),
+  // Optional — IMEI checking (imei.org client API; DHRU-style REST gateway)
+  IMEI_API_KEY: z.string().optional(),
+  IMEI_API_URL: z.string().url().optional(),
 
   // Optional — Upstash (rate limiting)
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
@@ -57,8 +57,7 @@ export const features = {
   clerk: Boolean(env.CLERK_SECRET_KEY && env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
   password: Boolean(env.ADMIN_EMAIL && env.ADMIN_PASSWORD_HASH && env.ADMIN_SESSION_SECRET),
   resend: Boolean(env.RESEND_API_KEY && env.RESEND_FROM_EMAIL),
-  imeidb: Boolean(env.IMEIDB_API_KEY),
-  imeiOrg: Boolean(env.IMEI_ORG_API_KEY),
+  imei: Boolean(env.IMEI_API_KEY),
   upstash: Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN),
   sentry: Boolean(env.SENTRY_DSN),
 } as const;

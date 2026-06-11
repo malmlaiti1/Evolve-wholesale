@@ -20,15 +20,9 @@ export default function SettingsPage() {
       icon: Mail,
     },
     {
-      name: "IMEI metadata (ImeiDB)",
-      on: features.imeidb,
-      env: "IMEIDB_API_KEY",
-      icon: ScanLine,
-    },
-    {
-      name: "IMEI blacklist (IMEI.org)",
-      on: features.imeiOrg,
-      env: "IMEI_ORG_API_KEY",
+      name: "IMEI checking (IMEI.org)",
+      on: features.imei,
+      env: "IMEI_API_KEY · IMEI_API_URL",
       icon: ScanLine,
     },
     {

@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export default function ImeiCheckerPage() {
   return (
     <>
-      <AdminHeader title="IMEI Checker" subtitle="Look up device metadata & GSMA blacklist status" />
+      <AdminHeader title="IMEI Checker" subtitle="Run a device, carrier, or blacklist report by IMEI" />
       <div className="p-6">
         <ImeiChecker />
       </div>
