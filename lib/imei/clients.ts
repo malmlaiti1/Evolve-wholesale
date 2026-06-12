@@ -1,5 +1,8 @@
 import "server-only";
 import { env, features } from "@/lib/env";
+import { pickReportObject, pickOrderId, toFields, type ImeiReportField } from "./parse";
+
+export type { ImeiReportField };
 
 /**
  * imei.org client API (a DHRU-style REST gateway).
@@ -24,8 +27,6 @@ export type ImeiServicesResult =
   | { configured: false }
   | { configured: true; error: string }
   | { configured: true; credits: number; services: ImeiService[] };
-
-export type ImeiReportField = { label: string; value: string };
 
 export type ImeiReportResult =
   | { configured: false }
@@ -79,12 +80,43 @@ export async function imeiServices(): Promise<ImeiServicesResult> {
   return { configured: true, credits, services };
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Map a non-success status (0 = duplicate/soft error, -1 = rejected) to a message. */
+function statusError(data: Record<string, unknown>): string {
+  const err = typeof data.error === "string" ? data.error.trim() : "";
+  if (data.status === 0) {
+    if (/duplicate/i.test(err)) {
+      return "This IMEI was already checked on this service — open it in your imei.org order history (no new charge).";
+    }
+    return err || "The order couldn't be completed.";
+  }
+  // status === -1 and anything else
+  if (/reject/i.test(err) || !err) {
+    return "Check rejected — the IMEI/serial isn't recognized by this service, or your balance is too low.";
+  }
+  return err;
+}
+
+/** Poll /track for an async order until the report is ready (or we give up). */
+async function pollReport(orderId: string): Promise<Record<string, unknown> | null> {
+  const url = endpoint("track", { id: orderId });
+  for (let i = 0; i < 12; i++) {
+    await sleep(3000);
+    const data = await call(url, 15_000);
+    if (data && data.status === 1) {
+      const report = pickReportObject(data);
+      if (report) return report;
+    }
+    // status 0 / pending → keep waiting
+  }
+  return null;
+}
+
 /** Run an IMEI/serial through a chosen service and return the full report. */
 export async function imeiSubmit(serviceId: number, imei: string): Promise<ImeiReportResult> {
   if (!features.imei) return { configured: false };
 
-  // Synchronous call: the report comes back directly (no order polling needed
-  // for the fast info/blacklist services). Allow a generous timeout.
   const data = await call(
     endpoint("submit", { service_id: String(serviceId), input: imei }),
     50_000,
@@ -94,24 +126,30 @@ export async function imeiSubmit(serviceId: number, imei: string): Promise<ImeiR
     return { configured: true, ok: false, error: "The check timed out or failed. Please try again." };
   }
 
+  // status: 1 = ok, 0 = duplicate/soft error, -1 = rejected.
   if (data.status !== 1) {
-    const err = typeof data.error === "string" && data.error ? data.error : "rejected";
-    const friendly =
-      err.toLowerCase() === "rejected"
-        ? "Check rejected — usually an out-of-credits balance or an IMEI not recognized by this service."
-        : err;
-    return { configured: true, ok: false, error: friendly };
+    return { configured: true, ok: false, error: statusError(data) };
   }
 
-  const response = data.response as { services?: Array<Record<string, unknown>> } | undefined;
-  const report = response?.services?.[0];
-  if (!report || typeof report !== "object") {
-    return { configured: true, ok: false, error: "No report returned for this IMEI." };
+  // The report can arrive inline (under various keys — see parse.ts), or, for
+  // async services, as just an orderId we then poll /track for.
+  let report = pickReportObject(data);
+  if (!report) {
+    const orderId = pickOrderId(data);
+    if (orderId) report = await pollReport(orderId);
   }
 
-  const fields: ImeiReportField[] = Object.entries(report)
-    .filter(([, v]) => v != null && String(v).trim() !== "")
-    .map(([label, v]) => ({ label, value: String(v) }));
+  if (report) {
+    const fields = toFields(report);
+    if (fields.length) return { configured: true, ok: true, fields, raw: report };
+  }
 
-  return { configured: true, ok: true, fields, raw: report };
+  // Reached only if the gateway reported success but we couldn't read a report.
+  // Log the raw shape (admin's own data, truncated) so we can tighten parse.ts.
+  console.error("[imei] success status but no parseable report:", JSON.stringify(data).slice(0, 1500));
+  return {
+    configured: true,
+    ok: false,
+    error: "The check completed but returned no readable report. It may still be processing — try again shortly.",
+  };
 }
