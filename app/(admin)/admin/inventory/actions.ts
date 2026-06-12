@@ -68,10 +68,48 @@ export async function updateModel(id: string, input: unknown): Promise<ActionRes
 export async function deleteModel(id: string): Promise<ActionResult> {
   await assertAdmin();
   const supabase = createAdminSupabase();
+
+  // Archived units are hidden from the admin UI (both inventory queries filter
+  // `archived_at is null`) but still hold a foreign key to the category — which
+  // would block deletion forever with no way to see or remove them. So first
+  // purge this category's archived units that aren't tied to any order
+  // (order-linked units are kept for records and intentionally still block).
+  const { data: archived } = await supabase
+    .from("devices")
+    .select("id")
+    .eq("model_id", id)
+    .not("archived_at", "is", null);
+
+  if (archived && archived.length > 0) {
+    const ids = archived.map((d) => d.id);
+    const { data: ordered } = await supabase
+      .from("order_items")
+      .select("device_id")
+      .in("device_id", ids);
+    const keep = new Set((ordered ?? []).map((o) => o.device_id));
+    const purge = ids.filter((i) => !keep.has(i));
+    if (purge.length > 0) await supabase.from("devices").delete().in("id", purge);
+  }
+
   const { error } = await supabase.from("device_models").delete().eq("id", id);
   if (error) {
-    if (error.code === "23503")
-      return { ok: false, error: "This category still has phones — remove them first." };
+    if (error.code === "23503") {
+      // Still blocked: distinguish visible (live) units from units kept for
+      // order history so the message is actionable.
+      const { data: live } = await supabase
+        .from("devices")
+        .select("id")
+        .eq("model_id", id)
+        .is("archived_at", null)
+        .limit(1);
+      return {
+        ok: false,
+        error:
+          live && live.length > 0
+            ? "This category still has phones — remove them first."
+            : "This category has phones tied to past orders, so it can’t be deleted (they’re kept for your records).",
+      };
+    }
     return { ok: false, error: "Could not delete the category." };
   }
   revalidatePath("/admin/inventory");
