@@ -21,7 +21,7 @@ type ServicesState =
 
 type ReportField = { label: string; value: string };
 type ReportState =
-  | { ok: true; fields: ReportField[] }
+  | { ok: true; fields: ReportField[]; cached: boolean }
   | { ok: false; error: string };
 
 // Pick a sensible default service: a universal "make & model" lookup if present,
@@ -33,13 +33,51 @@ function defaultServiceId(services: Service[]): number | undefined {
   return [...services].sort((a, b) => a.price - b.price)[0].id;
 }
 
+// Each upstream check is slow (~15-30s) AND costs a credit, so we cache the
+// report per (service, IMEI) in localStorage. Repeats are then instant and free
+// — and it stops an accidental double-click from charging twice.
+const CACHE_PREFIX = "imei-report:";
+type CachedReport = { fields: ReportField[]; ts: number };
+
+function cacheKey(serviceId: number, input: string) {
+  return `${CACHE_PREFIX}${serviceId}:${input.toUpperCase()}`;
+}
+function readCache(serviceId: number, input: string): CachedReport | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(cacheKey(serviceId, input));
+    const parsed = raw ? (JSON.parse(raw) as CachedReport) : null;
+    return parsed && Array.isArray(parsed.fields) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+function writeCache(serviceId: number, input: string, fields: ReportField[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(cacheKey(serviceId, input), JSON.stringify({ fields, ts: Date.now() }));
+  } catch {
+    /* quota / private mode — caching is best-effort */
+  }
+}
+
 export function ImeiChecker() {
   const [svc, setSvc] = useState<ServicesState | null>(null);
   const [serviceId, setServiceId] = useState<number | undefined>(undefined);
   const [imei, setImei] = useState("");
   const [loading, setLoading] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   const [scanning, setScanning] = useState(false);
   const [report, setReport] = useState<ReportState | null>(null);
+
+  // Tick an elapsed-seconds counter while a check runs, so the wait reads as
+  // "working, ~Ns in" rather than a frozen spinner.
+  useEffect(() => {
+    if (!loading) return;
+    setElapsed(0);
+    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(t);
+  }, [loading]);
 
   // Load services + balance once.
   useEffect(() => {
@@ -74,8 +112,18 @@ export function ImeiChecker() {
   const looksImei = /^\d{15}$/.test(input);
   const luhnOk = looksImei && isValidImei(input);
 
-  async function check() {
+  async function check(force = false) {
     if (!serviceId) return;
+
+    // Instant + free if we already have this exact (service, IMEI) result.
+    if (!force) {
+      const hit = readCache(serviceId, input);
+      if (hit) {
+        setReport({ ok: true, fields: hit.fields, cached: true });
+        return;
+      }
+    }
+
     setLoading(true);
     setReport(null);
     try {
@@ -86,7 +134,8 @@ export function ImeiChecker() {
       });
       const data = await res.json();
       if (data?.ok && Array.isArray(data.fields)) {
-        setReport({ ok: true, fields: data.fields });
+        writeCache(serviceId, input, data.fields);
+        setReport({ ok: true, fields: data.fields, cached: false });
       } else {
         setReport({ ok: false, error: data?.error ?? "Check failed. Please try again." });
       }
@@ -179,29 +228,60 @@ export function ImeiChecker() {
         )}
 
         <button
-          onClick={check}
+          onClick={() => check()}
           disabled={!validShape || !serviceId || loading}
           className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-accent-deep disabled:opacity-60 sm:w-auto"
         >
           {loading ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
-          {loading ? "Checking…" : "Check"}
+          {loading ? `Checking… ${elapsed}s` : "Check"}
         </button>
         {selected && (
           <p className="mt-2 text-[11px] text-ink-3">
             Runs <span className="font-medium text-ink-2">{selected.name}</span> · costs{" "}
-            <span className="mono">{selected.price.toFixed(2)}</span> credits.
+            <span className="mono">{selected.price.toFixed(2)}</span> credits. Repeats of the same
+            IMEI are cached — instant and free.
           </p>
         )}
       </div>
 
+      {/* Progress while a real check runs (~15-30s upstream). */}
+      {loading && (
+        <div className="mt-4 rounded-lg border border-line bg-paper p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <Loader2 className="size-5 shrink-0 animate-spin text-primary" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">
+                Checking{selected ? ` · ${selected.name}` : ""}…
+              </p>
+              <p className="text-[12px] text-ink-3">
+                Carrier &amp; Apple lookups can take 15–30s. {elapsed}s elapsed.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-cream-2">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-1000 ease-linear"
+              style={{ width: `${Math.min((elapsed / 25) * 100, 95)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Report */}
-      {report && (
+      {!loading && report && (
         <div className="mt-4 rounded-lg border border-line bg-paper p-4 sm:p-5">
           {report.ok ? (
             <>
-              <h3 className="inline-flex items-center gap-2 text-sm font-bold">
-                <FileText className="size-4 text-primary" /> Report
-              </h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="inline-flex items-center gap-2 text-sm font-bold">
+                  <FileText className="size-4 text-primary" /> Report
+                </h3>
+                {report.cached && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-primary">
+                    Cached · free
+                  </span>
+                )}
+              </div>
               <dl className="mt-3 divide-y divide-line">
                 {report.fields.map((f) => (
                   <div
@@ -215,6 +295,14 @@ export function ImeiChecker() {
                   </div>
                 ))}
               </dl>
+              {report.cached && (
+                <button
+                  onClick={() => check(true)}
+                  className="mt-4 text-[12px] font-semibold text-primary underline-offset-2 hover:underline"
+                >
+                  Re-check live (uses {selected ? `${selected.price.toFixed(2)} ` : "a "}credit)
+                </button>
+              )}
             </>
           ) : (
             <div className="inline-flex items-start gap-2 text-sm text-danger">
